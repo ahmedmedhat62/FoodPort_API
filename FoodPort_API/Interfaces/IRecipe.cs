@@ -1,10 +1,13 @@
 ﻿using FoodPort_API.Data;
 using FoodPort_API.Interfaces;
+using FoodPort_API.Migrations;
 using FoodPort_API.Models;
 using FoodPort_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 
 namespace FoodPort_API.Interfaces
 {
@@ -12,7 +15,9 @@ namespace FoodPort_API.Interfaces
     {
         // Get all recipes
         IEnumerable<Recipe> GetAllRecipes();
-        Task<Recipe> CreateRecipe(CreateRecipeDTO Recipe, IWebHostEnvironment env);
+        Task<Recipe> CreateRecipe(CreateRecipeDTO Recipe);
+        Task<NutritionFacts?> GetNutritionFactsAsync(string ingredientQuery, Guid recipe_id);
+        Task<NutritionFacts?> GetNutritionFactsByRecipeIdAsync(Guid recipe_id);
 
         // Get a recipe by its ID
         Recipe GetRecipeById(Guid id);
@@ -23,11 +28,15 @@ namespace FoodPort_API.Services
     public class RecipeService : IRecipe
     {
         private readonly DataContext _context;
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
         // Inject the DataContext via constructor
-        public RecipeService(DataContext context)
+        public RecipeService(DataContext context, HttpClient httpClient, IConfiguration configuration)
         {
             _context = context;
+            _httpClient = httpClient;
+            _configuration = configuration;
         }
 
         // Get all recipes
@@ -51,7 +60,45 @@ namespace FoodPort_API.Services
                 .Include(r => r.Ingredients) // Include ingredients
                 .Include(r => r.Instructions) // Include instructions
                 .Include(r => r.Nutrition) // Include nutrition facts
+                .Include(r => r.Tags)
+                .Include(r => r.Saves)
+                .Include(r => r.Comments)
+                .Include(r => r.Likes)
                 .FirstOrDefault(r => r.Id == id);
+        }
+        public async Task<NutritionFacts?> GetNutritionFactsAsync(string ingredientQuery , Guid recipe_id)
+        {
+            var apiKey = _configuration["xAY03EFjWAF7OrWeKTx8yw==Aj2sLvSqnw53BDEi"]; // Store your API key in appsettings.json or secrets
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"https://api.api-ninjas.com/v1/nutrition?query={Uri.EscapeDataString(ingredientQuery)}");
+
+            request.Headers.Add("X-Api-Key", "xAY03EFjWAF7OrWeKTx8yw==Aj2sLvSqnw53BDEi");
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+            var factsArray = JsonSerializer.Deserialize<JsonElement>(json);
+
+            if (factsArray.ValueKind != JsonValueKind.Array)
+                return null;
+
+            var result = new NutritionFacts();
+
+            foreach (var item in factsArray.EnumerateArray())
+            {
+               
+                result.fat_total += item.GetProperty("fat_total_g").GetDouble();
+                result.Fat_saturated += item.GetProperty("fat_saturated_g").GetDouble();
+                result.Carbohydrates += item.GetProperty("carbohydrates_total_g").GetDouble();
+                result.fiber += item.GetProperty("fiber_g").GetDouble();
+                result.Sugar += item.GetProperty("sugar_g").GetDouble();
+            }
+            result.Recipe_Id = recipe_id;
+
+            return result;
         }
 
         /*public async Task<string> CreateRecipe( CreateRecipeDTO dto, IWebHostEnvironment env)
@@ -186,34 +233,23 @@ namespace FoodPort_API.Services
                 return $"Error creating recipe: {ex.Message}";
             }
         }*/
-        public async Task<Recipe> CreateRecipe(CreateRecipeDTO dto, IWebHostEnvironment env)
+        public async Task<NutritionFacts?> GetNutritionFactsByRecipeIdAsync(Guid recipeId)
+        {
+            return await _context.NutritionFacts
+                .FirstOrDefaultAsync(n => n.Recipe_Id == recipeId);
+        }
+        public async Task<Recipe> CreateRecipe(CreateRecipeDTO dto)
         {
             try
             {
-                // Step 1: Handle image upload
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                var extension = Path.GetExtension(dto.Image.FileName).ToLower();
-                if (!allowedExtensions.Contains(extension))
-                    throw new ArgumentException("Unsupported file format");
-
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads", "recipes");
-                Directory.CreateDirectory(uploadsFolder);
-
-                var fileName = Guid.NewGuid() + extension;
-                var filePath = Path.Combine(uploadsFolder, fileName);
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.Image.CopyToAsync(stream);
-                }
-
-                // Step 2: Create Recipe object
+                // Step 1: Create Recipe object with placeholder image
                 var recipeId = Guid.NewGuid();
                 var recipe = new Recipe
                 {
                     Id = recipeId,
                     Title = dto.Title,
                     Description = dto.Description,
-                    Image = $"/uploads/recipes/{fileName}",
+                    Image = "/uploads/recipes/placeholder.png", // Placeholder image
                     CreatedAt = DateTime.UtcNow,
                     PrepTime = dto.PrepTime,
                     Servings = dto.Servings,
@@ -223,8 +259,8 @@ namespace FoodPort_API.Services
                     Instructions = new List<Instruction>(),
                     Tags = new List<Tag>()
                 };
-
-                // Step 3: Map Ingredients
+                var ingredientQueryBuilder = new StringBuilder();
+                // Step 2: Map Ingredients
                 if (dto.Ingredients != null)
                 {
                     foreach (var i in dto.Ingredients)
@@ -232,16 +268,19 @@ namespace FoodPort_API.Services
                         recipe.Ingredients.Add(new Ingredient
                         {
                             Id = Guid.NewGuid(),
-                            Recipe_Id = recipe.Id, // navigation property
+                            Recipe_Id = recipe.Id,
                             Name = i.Name,
                             Quantity = i.Quantity,
                             Unit = i.Unit,
-                            WeightInGrams = i.Quantity * 1 // logic placeholder
+                            WeightInGrams = i.Quantity * 1 // You can adjust logic here
                         });
+                        ingredientQueryBuilder.Append($"{i.Quantity} {i.Unit} {i.Name} ");
                     }
                 }
+                var ingredientQuery = ingredientQueryBuilder.ToString().Trim();
 
-                // Step 4: Map Instructions
+                Console.WriteLine( ingredientQuery );
+                // Step 3: Map Instructions
                 if (dto.Instructions != null)
                 {
                     foreach (var instr in dto.Instructions)
@@ -256,7 +295,7 @@ namespace FoodPort_API.Services
                     }
                 }
 
-                // Step 5: Map Tags
+                // Step 4: Map Tags
                 if (dto.Tags != null)
                 {
                     foreach (var t in dto.Tags)
@@ -270,9 +309,16 @@ namespace FoodPort_API.Services
                     }
                 }
 
-                // Step 6: Add recipe and save
+                // Step 5: Save to DB
                 _context.Recipes.Add(recipe);
                 await _context.SaveChangesAsync();
+                var nutrition = await GetNutritionFactsAsync(ingredientQuery, recipe.Id);
+                if (nutrition != null)
+                {
+                    _context.NutritionFacts.Add(nutrition);
+                    await _context.SaveChangesAsync();
+                    recipe.Nutrition = nutrition;
+                }
 
                 return recipe;
             }

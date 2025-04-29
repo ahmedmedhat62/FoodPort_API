@@ -4,10 +4,10 @@
     {
         public Guid Id { get; set; }
         public Guid Recipe_Id { get; set; }
-        public int Calories { get; set; }
-        public int Fat { get; set; } // in grams
-        public int Carbohydrates { get; set; } // in grams
-        public int Protein { get; set; } // in grams
-        public int Sugar { get; set; } // in grams
+        public double fat_total { get; set; }
+        public double Fat_saturated { get; set; } // in grams
+        public double Carbohydrates { get; set; } // in grams
+        public double fiber { get; set; } // in grams
+        public double Sugar { get; set; } // in grams
     }
 }

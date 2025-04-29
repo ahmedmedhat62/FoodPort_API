@@ -4,6 +4,7 @@ using FoodPort_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodPort_API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250427213259_clean")]
+    partial class clean
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,81 +24,6 @@ namespace FoodPort_API.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("ApplicationUserApplicationUser", b =>
-                {
-                    b.Property<string>("FollowersId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("FollowingId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("FollowersId", "FollowingId");
-
-                    b.HasIndex("FollowingId");
-
-                    b.ToTable("UserFollows", (string)null);
-                });
-
-            modelBuilder.Entity("FoodPort_API.Models.ApplicationUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ProfilePicture")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ApplicationUser");
-                });
 
             modelBuilder.Entity("FoodPort_API.Models.Comment", b =>
                 {
@@ -129,9 +57,6 @@ namespace FoodPort_API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -152,8 +77,6 @@ namespace FoodPort_API.Migrations
                         .HasColumnType("float");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApplicationUserId");
 
                     b.HasIndex("RecipeId");
 
@@ -243,12 +166,6 @@ namespace FoodPort_API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ApplicationUserId1")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -280,10 +197,6 @@ namespace FoodPort_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApplicationUserId");
-
-                    b.HasIndex("ApplicationUserId1");
 
                     b.HasIndex("NutritionId");
 
@@ -335,21 +248,6 @@ namespace FoodPort_API.Migrations
                     b.ToTable("Tags");
                 });
 
-            modelBuilder.Entity("ApplicationUserApplicationUser", b =>
-                {
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("FollowersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("FollowingId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("FoodPort_API.Models.Comment", b =>
                 {
                     b.HasOne("FoodPort_API.Models.Recipe", null)
@@ -361,10 +259,6 @@ namespace FoodPort_API.Migrations
 
             modelBuilder.Entity("FoodPort_API.Models.Ingredient", b =>
                 {
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany("Pantry")
-                        .HasForeignKey("ApplicationUserId");
-
                     b.HasOne("FoodPort_API.Models.Recipe", null)
                         .WithMany("Ingredients")
                         .HasForeignKey("RecipeId");
@@ -388,14 +282,6 @@ namespace FoodPort_API.Migrations
 
             modelBuilder.Entity("FoodPort_API.Models.Recipe", b =>
                 {
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany("PostedRecipes")
-                        .HasForeignKey("ApplicationUserId");
-
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany("SavedRecipes")
-                        .HasForeignKey("ApplicationUserId1");
-
                     b.HasOne("FoodPort_API.Models.NutritionFacts", "Nutrition")
                         .WithMany()
                         .HasForeignKey("NutritionId")
@@ -419,15 +305,6 @@ namespace FoodPort_API.Migrations
                     b.HasOne("FoodPort_API.Models.Recipe", null)
                         .WithMany("Tags")
                         .HasForeignKey("RecipeId");
-                });
-
-            modelBuilder.Entity("FoodPort_API.Models.ApplicationUser", b =>
-                {
-                    b.Navigation("Pantry");
-
-                    b.Navigation("PostedRecipes");
-
-                    b.Navigation("SavedRecipes");
                 });
 
             modelBuilder.Entity("FoodPort_API.Models.Recipe", b =>

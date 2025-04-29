@@ -16,7 +16,7 @@ namespace FoodPort_API.Models.DTOs
         public Difficulty Difficulty { get; set; }
 
 
-        public IFormFile Image { get; set; } // 📷 Uploaded image file
+       // public IFormFile Image { get; set; } // 📷 Uploaded image file
 
         public List<IngredientDTO> Ingredients { get; set; } 
         public List<InstructionsDTO> Instructions { get; set; } 

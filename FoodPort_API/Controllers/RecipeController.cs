@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FoodPort_API.Models.DTOs;
+using Microsoft.EntityFrameworkCore;
+using FoodPort_API.Data;
 
 namespace FoodPort_API.Controllers
 {
@@ -16,13 +18,15 @@ namespace FoodPort_API.Controllers
         private readonly IRecipe _recipeService;
         private readonly HttpClient _httpClient;
         private readonly IWebHostEnvironment _env;
+        private readonly DataContext _context;
 
 
-        public RecipesController(IRecipe recipeService, IWebHostEnvironment env)
+        public RecipesController(IRecipe recipeService, IWebHostEnvironment env , DataContext context)
         {
             _recipeService = recipeService;
             _httpClient = new HttpClient(); // You can inject this too if you prefer DI
             _env = env;
+            _context = context;
         }
 
         // GET: api/recipes
@@ -75,17 +79,77 @@ namespace FoodPort_API.Controllers
         }
         [HttpPost]
         [Route("create")]
-        public async Task<IActionResult> CreateRecipe([FromForm] CreateRecipeDTO dto)
+        public async Task<IActionResult> CreateRecipe([FromBody] CreateRecipeDTO dto)
         {
             try
             {
-                var result = await _recipeService.CreateRecipe(dto, _env);
+                var result = await _recipeService.CreateRecipe(dto );
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
+        }
+        /* [HttpGet("facts")]
+         public async Task<IActionResult> GetNutritionFacts([FromQuery] string query)
+         {
+             if (string.IsNullOrWhiteSpace(query))
+                 return BadRequest("Query cannot be empty.");
+
+             var facts = await _recipeService.GetNutritionFactsAsync(query);
+             if (facts == null)
+                 return NotFound("No nutritional data found.");
+
+             return Ok(facts);
+         }*/
+        [HttpGet("{id}/nutrition")]
+        public async Task<IActionResult> GetNutritionFactsForRecipe(Guid id)
+        {
+            var nutrition = await _recipeService.GetNutritionFactsByRecipeIdAsync(id);
+            if (nutrition == null)
+            {
+                return NotFound("Nutrition facts not found for this recipe.");
+            }
+
+            return Ok(nutrition);
+        }
+        [HttpPost("upload-image/{recipeId}")]
+        public async Task<IActionResult> UploadRecipeImage(Guid recipeId, IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var extension = Path.GetExtension(image.FileName).ToLower();
+            if (!allowedExtensions.Contains(extension))
+            {
+                return BadRequest("Unsupported file format.");
+            }
+
+            var recipe = _context.Recipes.FirstOrDefault(r => r.Id == recipeId);
+            if (recipe == null)
+            {
+                return NotFound("Recipe not found.");
+            }
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "recipes");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await image.CopyToAsync(stream);
+            }
+
+            recipe.Image = $"/uploads/recipes/{fileName}";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { imageUrl = recipe.Image });
         }
     }
 }
