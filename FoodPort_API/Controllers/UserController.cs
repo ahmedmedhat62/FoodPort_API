@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading.Tasks;
 using FoodPort_API.Data;
 using FoodPort_API.Models.DTOs;
+using FoodPort_API.Services;
 
 namespace FoodPort_API.Controllers
 {
@@ -95,5 +96,45 @@ namespace FoodPort_API.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO dto)
+        {
+            try
+            {
+                var token = await _userService.LoginAsync(dto);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        // POST: api/users/{userId}/saved-recipes/{recipeId}
+        [HttpPost("save")]
+        public async Task<IActionResult> SaveRecipe(Guid userId, [FromBody] Guid recipeId)
+        {
+            try
+            {
+                await _userService.AddSavedRecipeAsync(userId, recipeId);
+                return Ok("Recipe saved successfully.");
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpGet("saved/{userId}")]
+        public async Task<IActionResult> GetSavedRecipes(Guid userId)
+        {
+            var recipes = await _userService.GetSavedRecipesAsync(userId);
+            return Ok(recipes);
+        }
+
+
+
+
     }
 }

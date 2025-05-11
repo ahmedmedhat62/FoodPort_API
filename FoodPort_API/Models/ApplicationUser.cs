@@ -1,16 +1,22 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodPort_API.Models
 {
     public class ApplicationUser: IdentityUser<Guid>
     {
-        public string Name { get; set; }
-        public string ProfilePicture { get; set; }
-        public ICollection<Ingredient> Pantry { get; set; } = new List<Ingredient>();
+       
+        public string ProfilePicture { get; set; } = string.Empty;
+        [NotMapped] 
+        public ICollection<Guid> Pantry { get; set; } = new List<Guid>();
+     
         public ICollection<Recipe> SavedRecipes { get; set; } = new List<Recipe>();
-        public ICollection<Recipe> PostedRecipes { get; set; } = new List<Recipe>();
-        public ICollection<ApplicationUser> Followers { get; set; } = new List<ApplicationUser>();
-        public ICollection<ApplicationUser> Following { get; set; } = new List<ApplicationUser>();
-        public ICollection<Tag> PreferredTags { get; set; } = new List<Tag>();
+        [NotMapped] 
+        public ICollection<Guid> PostedRecipes { get; set; } = new List<Guid>();
+        [NotMapped]
+        public ICollection<Guid> Followers { get; set; } = new List<Guid>();
+        [NotMapped]
+        public ICollection<Guid> Following { get; set; } = new List<Guid>();
+        
     }
 }

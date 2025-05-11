@@ -45,9 +45,10 @@ namespace FoodPort_API.Data
                 .HasKey(t => t.Id);
 
             modelBuilder.Entity<ApplicationUser>()
-                .HasMany(u => u.Followers)
-                .WithMany(u => u.Following)
-                .UsingEntity(j => j.ToTable("UserFollows"));
+           .HasMany(u => u.SavedRecipes)
+           .WithMany();
+
+
 
             base.OnModelCreating(modelBuilder);
         }

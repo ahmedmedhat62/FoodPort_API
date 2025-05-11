@@ -7,12 +7,38 @@ using Microsoft.Extensions.Logging;
 using FoodPort_API.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using FoodPort_API.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtSection = builder.Configuration.GetSection("JWT_Token_Settings");
+builder.Services.Configure<JWT_Token_Settings>(jwtSection);
+
+var jwtConfiguration = jwtSection.Get<JWT_Token_Settings>();
+var key = Encoding.ASCII.GetBytes(jwtConfiguration.SecretKey);
+
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidAudience = jwtConfiguration.Audience,
+        ValidIssuer = jwtConfiguration.Issuer,
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<IRecipe, RecipeService>();
+builder.Services.AddScoped<IUser, UserService>();
 
 builder.Services.AddCors(options =>
 {

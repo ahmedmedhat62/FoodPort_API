@@ -4,6 +4,7 @@ using FoodPort_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodPort_API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250511184658_zeby")]
+    partial class zeby
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace FoodPort_API.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("ApplicationUserRecipe", b =>
-                {
-                    b.Property<Guid>("ApplicationUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("SavedRecipesId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("ApplicationUserId", "SavedRecipesId");
-
-                    b.HasIndex("SavedRecipesId");
-
-                    b.ToTable("ApplicationUserRecipe");
-                });
 
             modelBuilder.Entity("FoodPort_API.Models.ApplicationUser", b =>
                 {
@@ -248,6 +236,9 @@ namespace FoodPort_API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ApplicationUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -279,6 +270,8 @@ namespace FoodPort_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
 
                     b.HasIndex("NutritionId");
 
@@ -461,21 +454,6 @@ namespace FoodPort_API.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("ApplicationUserRecipe", b =>
-                {
-                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("ApplicationUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodPort_API.Models.Recipe", null)
-                        .WithMany()
-                        .HasForeignKey("SavedRecipesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("FoodPort_API.Models.Comment", b =>
                 {
                     b.HasOne("FoodPort_API.Models.Recipe", null)
@@ -510,6 +488,10 @@ namespace FoodPort_API.Migrations
 
             modelBuilder.Entity("FoodPort_API.Models.Recipe", b =>
                 {
+                    b.HasOne("FoodPort_API.Models.ApplicationUser", null)
+                        .WithMany("SavedRecipes")
+                        .HasForeignKey("ApplicationUserId");
+
                     b.HasOne("FoodPort_API.Models.NutritionFacts", "Nutrition")
                         .WithMany()
                         .HasForeignKey("NutritionId")
@@ -584,6 +566,11 @@ namespace FoodPort_API.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("FoodPort_API.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("SavedRecipes");
                 });
 
             modelBuilder.Entity("FoodPort_API.Models.Recipe", b =>

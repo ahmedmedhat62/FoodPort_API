@@ -11,11 +11,11 @@
 
         public string ConfirmPassword { get; set; }
 
-        // Optional fields for profile setup
-        public string Name { get; set; }
 
-        public string ProfilePictureUrl { get; set; } // URL or file path for profile picture
 
-        public List<TagDTO> PreferredTags { get; set; } = new List<TagDTO>(); // Tag names
+
+        
+
+
     }
 }
