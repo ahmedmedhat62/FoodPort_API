@@ -29,6 +29,9 @@ namespace FoodPort_API.Services
         //Task<List<Recipe>> GetSavedRecipesAsync(Guid userId);
         Task AddSavedRecipeAsync(Guid userId, Guid recipeId);
         Task<ICollection<Recipe>> GetSavedRecipesAsync(Guid userId);
+        Task LikeRecipeAsync(Guid userId, Guid recipeId);
+        Task<Comment> PostCommentAsync(Guid authorId, Guid recipeId, string content);
+        Task<IEnumerable<Comment>> GetCommentsByRecipeIdAsync(Guid recipeId);
     }
 
     public class UserService : IUser
@@ -175,6 +178,59 @@ namespace FoodPort_API.Services
                                            .FirstOrDefaultAsync(u => u.Id == userId);
 
             return user?.SavedRecipes ?? new List<Recipe>();
+        }
+        public async Task LikeRecipeAsync(Guid userId, Guid recipeId)
+        {
+            var user = await GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            var recipe = await _context.Recipes.FirstOrDefaultAsync(r => r.Id == recipeId);
+            if (recipe == null)
+            {
+                throw new Exception("Recipe not found.");
+            }
+
+            var existingLike = await _context.Likes.FirstOrDefaultAsync(l => l.UserId == userId && l.RecipeId == recipeId);
+            if (existingLike != null)
+            {
+                throw new Exception("Recipe already liked by user.");
+            }
+
+            var like = new Like
+            {
+                UserId = userId,
+                RecipeId = recipeId
+            };
+
+            await _context.Likes.AddAsync(like);
+            await _context.SaveChangesAsync();
+        }
+        public async Task<Comment> PostCommentAsync(Guid authorId, Guid recipeId, string content)
+        {
+            var comment = new Comment
+            {
+                Id = Guid.NewGuid(),
+                AuthorId = authorId,
+                RecipeId = recipeId,
+                Content = content,
+                PostedAt = DateTime.UtcNow
+            };
+
+            await _context.Comments.AddAsync(comment);
+            await _context.SaveChangesAsync();
+
+            return comment;
+        }
+
+        public async Task<IEnumerable<Comment>> GetCommentsByRecipeIdAsync(Guid recipeId)
+        {
+            return await _context.Comments
+                .Where(c => c.RecipeId == recipeId)
+                .OrderBy(c => c.PostedAt)
+                .ToListAsync();
         }
     }
 }

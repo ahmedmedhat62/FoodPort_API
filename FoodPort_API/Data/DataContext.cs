@@ -1,4 +1,5 @@
 ﻿using FoodPort_API.Models;
+using FoodPort_API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -19,34 +20,39 @@ namespace FoodPort_API.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Saves> Saves { get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<UserFollower> UserFollowers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Optional: Configure FK constraints if needed explicitly
-            modelBuilder.Entity<Ingredient>()
-                .HasKey(i => i.Id);
+            base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Instruction>()
-                .HasKey(i => i.Id);
+            // Configure users following other users
+            modelBuilder.Entity<UserFollower>()
+                .HasKey(uf => new { uf.FollowerId, uf.FollowedId });
 
-            modelBuilder.Entity<NutritionFacts>()
-                .HasKey(n => n.Id);
+            modelBuilder.Entity<UserFollower>()
+                .HasOne(uf => uf.Follower)
+                .WithMany(u => u.Following)
+                .HasForeignKey(uf => uf.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Like>()
-                .HasKey(l => l.Id);
+            modelBuilder.Entity<UserFollower>()
+                .HasOne(uf => uf.Followed)
+                .WithMany(u => u.Followers)
+                .HasForeignKey(uf => uf.FollowedId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Comment>()
-                .HasKey(c => c.Id);
-
-            modelBuilder.Entity<Saves>()
-                .HasKey(s => s.Id);
-
-            modelBuilder.Entity<Tag>()
-                .HasKey(t => t.Id);
+            // Configure other relationships as needed
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(u => u.SavedRecipes)
+                .WithMany()
+                .UsingEntity(join => join.ToTable("UserSavedRecipes"));
 
             modelBuilder.Entity<ApplicationUser>()
-           .HasMany(u => u.SavedRecipes)
-           .WithMany();
+                .HasMany(u => u.PostedRecipes)
+                .WithOne()
+                .HasForeignKey(r => r.AuthorId);
 
 
 

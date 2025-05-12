@@ -113,7 +113,7 @@ namespace FoodPort_API.Controllers
 
         // POST: api/users/{userId}/saved-recipes/{recipeId}
         [HttpPost("save")]
-        public async Task<IActionResult> SaveRecipe(Guid userId, [FromBody] Guid recipeId)
+        public async Task<IActionResult> SaveRecipe(Guid userId,  Guid recipeId)
         {
             try
             {
@@ -131,6 +131,58 @@ namespace FoodPort_API.Controllers
         {
             var recipes = await _userService.GetSavedRecipesAsync(userId);
             return Ok(recipes);
+        }
+        [HttpPost("{recipeId}/like")]
+        public async Task<IActionResult> LikeRecipe(Guid recipeId,  Guid userId)
+        {
+            try
+            {
+                await _userService.LikeRecipeAsync(userId, recipeId);
+                return Ok(new { message = "Recipe liked successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> PostComment( CommentDto commentDto)
+        {
+            if (string.IsNullOrWhiteSpace(commentDto.Content))
+            {
+                return BadRequest("Content cannot be empty.");
+            }
+
+            try
+            {
+                var comment = await _userService.PostCommentAsync(commentDto.AuthorId, commentDto.RecipeId, commentDto.Content);
+                return Ok(comment);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        // GET: api/comments/{recipeId}
+        [HttpGet("comments")]
+        public async Task<IActionResult> GetComments(Guid recipeId)
+        {
+            try
+            {
+                var comments = await _userService.GetCommentsByRecipeIdAsync(recipeId);
+                return Ok(comments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+        public class CommentDto
+        {
+            public Guid AuthorId { get; set; }
+            public Guid RecipeId { get; set; }
+            public string Content { get; set; }
         }
 
 
